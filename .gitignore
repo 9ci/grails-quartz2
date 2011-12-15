@@ -1,0 +1,11 @@
+target/
+stacktrace.log
+
+# Eclipse Project files
+.classpath
+.project
+.settings/
+
+# OS X generated files
+.DS_Store
+
