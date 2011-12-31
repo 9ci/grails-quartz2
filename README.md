@@ -4,7 +4,7 @@ Uses the new [Quartz][] 2.1 framework from quartz-scheduler.org. The goal is to 
 
 ## What this plugin adds to be friendly with Grails
 
-* Its mostly backward compatible with the original [Quartz plugin][] so its allows scheduling jobs using job arifacts as well. See note below for areas where it is not compatible.
+* Its mostly backward compatible with the original [Quartz plugin][] so its allows scheduling jobs using job artifacts as well. See note below for areas where it is not compatible.
 * Uses a factory to creates a single bean called quartzScheduler which is a standard Quartz [Scheduler][] and starts it. Its does not start it by default in test. You can inject and use the quartzScheduler bean like any normal Grails/Spring bean.
 * All quartz settings can be done in Config.groovy, thus eliminating the need for a quartz.properties
 * Sets up a PersistenceContextJobListener, makes it a bean and adds it to the scheduler. This wraps all the jobs to make sure they have a hibernate session bound to the thread or if using another (nosql) engine then this should work for other non-hibernate gorm engines too as it uses the "persistenceInterceptor" bean to init(). If you don't need gorm persistence in your job then you can avoid the overhead and turn it of by assigning a "gormSession:false" property in the the JobDataMap when setting up a [JobDetail][] or Trigger. Note: 
@@ -27,9 +27,17 @@ outside of the ability to setup quartz jobs through config as outlined above and
 * The config no longer needs to be static and can be completely extracted into a Config
 * a config property is injected into the Job artifact to make it easier to access it for setup. This injected property is actually a mergedConfig form the [plugin-config][]. This allows a plugin to setup a job with defaults and then allows the user of the plugin to override the settings much easier with more flexibility in the app (for example, change a trigger from a SimpleTrigger to a CronTrigger with more fine tuned control)
 
+## Why we chose not to use or modify the quartz-plugin
+
+* ultimately I think it would be best to find a way to merge this with the main plugin. We needed something quick for Quartz 2 and something that we could also test and get working with Grails 2. 
+* the changes in [Quartz][] 2 made for many incompatibilities with older 1.8. I think it will be difficult to have 1 plugin support both versions but it may be possible with some work. Spring 3.1 seemed to pull it off but with a considerable amount of ugly gyrations
+* This plugin does not rely on the Spring support classes for quartz which the existing quartz-plugin does. Spring added support for [Quartz][] 2 in their upcoming 3.1 which will come with Grails 2. However we need and wanted Quartz 2 support now for our 1.3.x Grails apps
+* When doing jobs on the fly at customer sites, we wanted something dirt simple, light weight and be able to do the quartz api but got the job done to integrate with Grails
+
 ## Docs and Examples ##
 
-clone this and look at the example test project under tests/projects/qkiss for examples on how its being used. Look at Config.groovy, the externalized app-qkiss-config.groovy on the root, and the integration tests. To get a schedule going in your app follow the examples in the [documentation and quick start][] and either set a grails.plugin.quartz2.jobSetup closure in config as in the example below or just inject the quartzScheduler([Scheduler][]) into BuildConfig and call quartzScheduler.scheduleJob once you have a JobDetail and Trigger setup.
+clone this project and look at the example test project under tests/projects/qkiss for examples on how its being used. Look at Config.groovy, the externalized app-qkiss-config.groovy on the root, and the integration tests. To get a schedule going in your app follow the examples in the [documentation and quick start][] and either set a grails.plugin.quartz2.jobSetup closure in config as in the example below or just inject the quartzScheduler([Scheduler][]) into BuildConfig and call quartzScheduler.scheduleJob once you have a JobDetail and Trigger setup.
+You can also use artifacts as outlined in 
 
 ### Config.groovy closure
 
@@ -223,12 +231,6 @@ Example:
 		simple repeatInterval: 1000l, repeatCount:1
 	}
 
-
-## Why we chose not to use or modify the quartz-plugin
-
-* the changes in [Quartz][] 2 made for many incompatibilities with older 1.8. I think it will be difficult to have 1 plugin support both versions but it may be possible with some work. Spring 3.1 seemed to pull it off but with a considerable amount of ugly gyrations
-* This plugin does not rely on the Spring support classes for quartz which the existing quartz-plugin does. Spring added support for [Quartz][] 2 in their upcoming 3.1 which will come with Grails 2. However we need and wanted Quartz 2 support now for our 1.3.x Grails apps
-* When doing jobs on the fly at customer sites, we wanted something dirt simple, light weight and used the quartz api but got the job done to integrate with Grails
 
 [documentation and quick start]: http://www.quartz-scheduler.org/documentation/quartz-2.1.x/quick-start
 [Quartz]: http://www.quartz-scheduler.org
