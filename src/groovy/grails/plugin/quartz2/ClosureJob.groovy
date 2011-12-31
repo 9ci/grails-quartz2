@@ -26,7 +26,7 @@ import org.quartz.JobExecutionException;
 /**
  * Quartz Job implementation that invokes a Groovy closure
  */
-public static class ClosureJob implements Job {
+public class ClosureJob implements Job {
     private static Logger log = LoggerFactory.getLogger(ClosureJob.class);
 
 	Closure   groovyClosure

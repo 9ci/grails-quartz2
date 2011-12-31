@@ -156,19 +156,23 @@ The goal is to keep it as simple as possible while making it friendly for Groovy
     }
 
 
-    def doWithApplicationContext = {ctx ->
-
+    def doWithApplicationContext = { ctx ->
+		//assert ctx.quartzScheduler
+		
         application.jobClasses.each {jobClass ->
 			//println "** doWithApplicationContext adding methods to jobClass.getFullName()"
             scheduleJob.delegate = delegate
             scheduleJob(jobClass, ctx)
         }
-
-		if(application.mergedConfig.grails.plugin.quartz2.autoStartup){
-			def builders = application.mergedConfig.grails.plugin.quartz2.jobSetup.flatten()
-			if(builders?.keySet()){
-				builders.each{key,clos->
-					clos(ctx.quartzScheduler,ctx)
+		
+		def scheduler = ctx.getBean("quartzScheduler")
+        if (scheduler) {
+			if(application.mergedConfig.grails.plugin.quartz2.autoStartup){
+				def builders = application.mergedConfig.grails.plugin.quartz2.jobSetup.flatten()
+				if(builders?.keySet()){
+					builders.each{key,clos->
+						clos(scheduler,ctx)
+					}
 				}
 			}
 		}

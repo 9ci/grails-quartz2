@@ -27,7 +27,7 @@ import org.quartz.JobExecutionException;
  * Quartz Job implementation that invokes a specified method of an object, or static if class is specified.
  * this has the DisallowConcurrentExecution set to true
  */
-public static class SpringBeanJob implements Job {
+public class SpringBeanJob implements Job {
     private static Logger log = LoggerFactory.getLogger(SpringBeanJob.class);
 
 	def  applicationContext

@@ -27,7 +27,7 @@ import org.quartz.JobExecutionException;
  * Quartz Job implementation that invokes a specified method of an object, or static if class is specified.
  * this has the DisallowConcurrentExecution set to true
  */
-public static class InvokeMethodJob implements Job {
+public class InvokeMethodJob implements Job {
     private static Logger log = LoggerFactory.getLogger(InvokeMethodJob.class);
 	
 	Class    targetClass //the class if this is a static
