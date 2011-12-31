@@ -21,15 +21,15 @@ import org.springframework.beans.factory.config.MethodInvokingFactoryBean
 
 class Quartz2GrailsPlugin {
     // the plugin version
-    def version = "0.2.1.2"
+    def version = "0.2.2"
     // the version or versions of Grails the plugin is designed for
     def grailsVersion = "1.3 > *"
-    // the other plugins this plugin depends on
-    def dependsOn = [:]
-    // resources that are excluded from plugin packaging
-    def pluginExcludes = [
-            "grails-app/views/error.gsp"
-    ]
+
+	def pluginExcludes = [
+		"grails-app/views/**/*",
+		"grails-app/controllers/**/*",
+		"web-app/**/*"
+	]
 
     // TODO Fill in these fields
     def author = "Joshua Burentt"
@@ -50,6 +50,8 @@ The goal is to keep it as simple as possible while making it friendly for Groovy
 
     def artefacts = [new JobArtefactHandler()]
 
+	def loadAfter = ['hibernate']
+
     def doWithSpring = {
 		def mcfg = application.mergedConfig
 		MergedConfigHolder.config = application.mergedConfig
@@ -61,9 +63,9 @@ The goal is to keep it as simple as possible while making it friendly for Groovy
             configureJobBeans(jobClass)
         }
 
-		persistenceContextJobListener(PersistenceContextJobListener){
-			persistenceInterceptor = ref("persistenceInterceptor")
-		}
+		// persistenceContextJobListener(PersistenceContextJobListener){
+		// 	persistenceInterceptor = ref("persistenceInterceptor")
+		// }
 		
     	jobErrorLoggerListener(JobErrorLoggerListener)
 		quartzJobFactory(GrailsJobFactory)
@@ -72,9 +74,11 @@ The goal is to keep it as simple as possible while making it friendly for Groovy
 			grailsApplication = ref('grailsApplication')
             quartzProperties = quartzProps
 			jobFactory = quartzJobFactory
+			// delay scheduler startup to after-bootstrap stage
+			//autoStartup = false
             // delay scheduler startup to after-bootstrap stage
             autoStartup = mcfg.grails.plugin.quartz2.autoStartup
-            globalJobListeners = [ref('jobErrorLoggerListener'),ref('persistenceContextJobListener')]
+            globalJobListeners = [ref('jobErrorLoggerListener')]//,ref('persistenceContextJobListener')]
 			if (mcfg.grails.plugin.quartz2.jdbcStore) {
                 dataSource = ref('dataSource')
                 transactionManager = ref('transactionManager')
@@ -157,16 +161,21 @@ The goal is to keep it as simple as possible while making it friendly for Groovy
 
 
     def doWithApplicationContext = { ctx ->
-		//assert ctx.quartzScheduler
-		
-        application.jobClasses.each {jobClass ->
-			//println "** doWithApplicationContext adding methods to jobClass.getFullName()"
-            scheduleJob.delegate = delegate
-            scheduleJob(jobClass, ctx)
-        }
-		
 		def scheduler = ctx.getBean("quartzScheduler")
         if (scheduler) {
+			//do this here so that 
+			if(ctx.persistenceInterceptor){
+				def listener = new PersistenceContextJobListener()
+				listener.persistenceInterceptor = ctx.persistenceInterceptor
+				scheduler.listenerManager.addJobListener(listener)
+			}
+
+	        application.jobClasses.each {jobClass ->
+				//println "** doWithApplicationContext adding methods to jobClass.getFullName()"
+	            scheduleJob.delegate = delegate
+	            scheduleJob(jobClass, ctx, scheduler)
+	        }
+	
 			if(application.mergedConfig.grails.plugin.quartz2.autoStartup){
 				def builders = application.mergedConfig.grails.plugin.quartz2.jobSetup.flatten()
 				if(builders?.keySet()){
@@ -210,34 +219,29 @@ The goal is to keep it as simple as possible while making it friendly for Groovy
                 //     event.ctx.registerBeanDefinition("${name}Trigger", beans.getBeanDefinition("${name}Trigger"))
                 // }
 
-                scheduleJob(jobClass, event.ctx)
+                scheduleJob(jobClass, event.ctx, scheduler)
             } else {
                 log.error("Application context or Quartz Scheduler not found. Can't reload Quartz plugin.")
             }
         }
     }
 
-    def scheduleJob = {GrailsJobClass jobClass, ApplicationContext ctx ->
-        def scheduler = ctx.getBean("quartzScheduler")
-        if (scheduler) {
-            def fullName = jobClass.fullName
-            // add job to scheduler, and associate triggers with it
-			def jobDetail = ctx.getBean("${fullName}Detail")
-            scheduler.addJob(jobDetail, true)
-            jobClass.triggers.each {key, trigger ->
-                //println("Scheduling $fullName with trigger $key: ${trigger} with name:${trigger.triggerAttributes.name}")
-				def tkey = new TriggerKey(trigger.triggerAttributes.name,trigger.triggerAttributes.group) 
-				def trigInstance = TriggersBuilder.createTrigger(trigger,jobDetail.key)
-                if (scheduler.getTrigger(tkey)) {
-                    scheduler.rescheduleJob(tkey, trigInstance)
-                } else {
-                    scheduler.scheduleJob(trigInstance)
-                }
-            }
-            //println("Job ${jobClass.fullName} scheduled")
-        } else {
-            log.error("Failed to register job triggers: scheduler not found")
-        }
+    def scheduleJob = {GrailsJobClass jobClass,  ctx, scheduler ->
+
+		def fullName = jobClass.fullName
+		// add job to scheduler, and associate triggers with it
+		def jobDetail = ctx.getBean("${fullName}Detail")
+		scheduler.addJob(jobDetail, true)
+		jobClass.triggers.each {key, trigger ->
+			//println("Scheduling $fullName with trigger $key: ${trigger} with name:${trigger.triggerAttributes.name}")
+			def tkey = new TriggerKey(trigger.triggerAttributes.name,trigger.triggerAttributes.group) 
+			def trigInstance = TriggersBuilder.createTrigger(trigger,jobDetail.key)
+			if (scheduler.getTrigger(tkey)) {
+				scheduler.rescheduleJob(tkey, trigInstance)
+			} else {
+				scheduler.scheduleJob(trigInstance)
+			}
+		}
     }
 
     def configureJobBeans = {GrailsJobClass jobClass ->        
