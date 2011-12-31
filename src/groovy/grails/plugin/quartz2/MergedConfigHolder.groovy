@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2008 the original author or authors.
+ * Copyright (c) 2011 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-/**
- * Upgrade script for Quartz plugin
- *
- * @author Sergey Nebolsin (nebolsin@gmail.com)
- *
- * @since 0.2
- */
+package grails.plugin.quartz2;
 
-// ensure that there are 'jobs' directory under application 'grails-app'
-Ant.mkdir(dir:"${basedir}/grails-app/jobs")
+/**
+ * Hold the config so its easy to get in the jobs
+ */
+public class MergedConfigHolder  {
+
+    static config
+
+}

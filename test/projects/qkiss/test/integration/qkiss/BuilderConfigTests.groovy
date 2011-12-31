@@ -19,7 +19,7 @@ class BuilderConfigTests extends GroovyTestCase {
 		sleep(3000)
 		assert HelloJob.ok
 		assert HelloFromExternalConfigJob.ok
-		assert HelloFromExternalConfigJob.firedCount == 1
+		assert HelloFromExternalConfigJob.firedCount == 2
     }
 
 	void testHunter() {

@@ -11,7 +11,12 @@ import org.quartz.*
 import org.quartz.impl.triggers.SimpleTriggerImpl
 import qkiss.*
 
-grails.plugins.quartz.autoStartup = true
+grails.plugin.quartz2.autoStartup = true
+
+grails.plugin.quartz2.configTriggerJob = { 
+	simple repeatInterval: 100l, repeatCount:1
+}
+
 
 org{
 	quartz{
@@ -40,7 +45,7 @@ grails.plugin.quartz2.jobSetup.job2 = { quartzScheduler, ctx  ->
 		.withSchedule(
 			simpleSchedule()
 			.withIntervalInSeconds(1)
-			.withRepeatCount(2)
+			.withRepeatCount(1)
 			.withMisfireHandlingInstructionNextWithExistingCount()
 		)  
 		.startNow()

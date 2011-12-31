@@ -11,7 +11,7 @@ org{
 }
 
 grails{
-	plugins{
+	plugin{
 		quartz2 {
     		autoStartup = true
 		}
@@ -20,6 +20,6 @@ grails{
 
 environments {
     test {
-        grails.plugins.quartz2.autoStartup = false
+        grails.plugin.quartz2.autoStartup = false
     }
 }

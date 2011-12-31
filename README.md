@@ -1,24 +1,31 @@
 # A simple plugin for Quartz 2+ #
 
-Uses the new [Quartz][] 2.1 framework from quartz-scheduler.org. The goal is to keep it as simple as possible while making it friendly for Groovy/Grails.
+Uses the new [Quartz][] 2.1 framework from quartz-scheduler.org. The goal is to keep this as simple as possible while making it friendly for Groovy/Grails. This is (mostly) backward compatible with the original [Quartz plugin][] too so the concept of Job artifacts should work as well. 
 
 ## What this plugin adds to be friendly with Grails
 
+* Its mostly backward compatible with the original [Quartz plugin][] so its allows scheduling jobs using job arifacts as well. See note below for areas where it is not compatible.
 * Uses a factory to creates a single bean called quartzScheduler which is a standard Quartz [Scheduler][] and starts it. Its does not start it by default in test. You can inject and use the quartzScheduler bean like any normal Grails/Spring bean.
 * All quartz settings can be done in Config.groovy, thus eliminating the need for a quartz.properties
-* Sets up a PersistenceContextJobListener, makes it a bean and adds it to the scheduler. This wraps all the jobs to make sure they have a hibernate session bound to the thread or if using another (nosql) engine then this should work for other non-hibernate gorm engines too as it uses the "persistenceInterceptor" bean to init(). If you don't need gorm persistence in your job then you can avoid the overhead and turn it of by assigning a "gorm:false" property in the the JobDataMap when setting up a [JobDetail][] or Trigger. Note: 
+* Sets up a PersistenceContextJobListener, makes it a bean and adds it to the scheduler. This wraps all the jobs to make sure they have a hibernate session bound to the thread or if using another (nosql) engine then this should work for other non-hibernate gorm engines too as it uses the "persistenceInterceptor" bean to init(). If you don't need gorm persistence in your job then you can avoid the overhead and turn it of by assigning a "gormSession:false" property in the the JobDataMap when setting up a [JobDetail][] or Trigger. Note: 
 * adds a general InvokeMethodJob class that can be used to setup a [JobDetail][] to calls a service bean method or any static or local method on a passed in object
 * support for assigning a builder closures in Config.groovy (or an externalized config) that will get called on application startup to setup your scheduler
 * Adds a SimpleJobDetail - an implementation of the JobDetail that makes it easier to setDisallowConcurrentExecution with the need to put the annotaion on the Job class. Also makes it much easier to add JobDataMap properties by simply passing a map into the constructor
 * ClosureJob - implements the Quartz [Job][] interface and is a utility class to allow you pass in configuration and a closure to be called when the Job executes.
 
-## Why we chose not to use or modify the quartz-plugin
+## Additions and changes from [Quartz plugin][]
 
-* the changes in [Quartz][] 2 made for many incompatibilities with older 1.8. I think it will be difficult to have 1 plugin support both versions but it may be possible with some work. Spring 3.1 seemed to pull it off but with a considerable amount of ugly gyrations
-* This plugin does not rely on the Spring support classes for quartz which the existing quartz-plugin makes heavy use of. Spring added support for [Quartz][] 2 in their upcoming 3.1 which will come with Grails 2. However we need and wanted Quartz 2 support now for our 1.3.x Grails apps
-* We wanted something dirt simple and light weight but got the job done to integrate with Grails
+outside of the ability to setup quartz jobs through config as outlined above and below, the following changes were made
 
-[Quartz][] 2 has a fairly simple way to build schedules so we just stick with the out of the box stuff. The [documentation and quick start][] are a fairly easy read.
+* Compatible with Grails 2x
+* the configuration and quartz.properties can now all reside in the standard Config.groovy ( or externalized config.groovy) instead needing to be separate files
+* uses the persistenceInterceptor spring bean to setup sessions instead of hibernate and sessionFactory allowing it to work better with other noSql plugins and the datasources plugins
+* Removed any dependency on the Spring wrapper classes around quartz
+* Removed deprecated volatility settings
+* Triggers are no longer setup as spring beans
+* Job artifact in the grails-app/jobs dir :
+* The config no longer needs to be static and can be completely extracted into a Config
+* a config property is injected into the Job artifact to make it easier to access it for setup. This injected property is actually a mergedConfig form the [plugin-config][]. This allows a plugin to setup a job with defaults and then allows the user of the plugin to override the settings much easier with more flexibility in the app (for example, change a trigger from a SimpleTrigger to a CronTrigger with more fine tuned control)
 
 ## Docs and Examples ##
 
@@ -35,7 +42,7 @@ You can externalize the config (see the grails docs on externalizing the config)
 	import static org.quartz.TriggerBuilder.*;
 	import grails.plugin.quartz2.InvokeMethodJob
 
-	grails.plugins.quartz.autoStartup = true 
+	grails.plugin.quartz2.autoStartup = true 
 
 	org{
 		quartz{
@@ -101,8 +108,8 @@ name and jobClass are the only required fields
 	
 	def sd  = new SimpleJobDetail("test",TestJob.class, [prop:'xyz'] )
 	...
-	//gorm:false will turn off the session init for gorm
-	def map = [name:"test",jobClass:TestJob.class, concurrent:false, jobData:[fly:'free',gorm:false] ]
+	//gormSession:false will turn off the session init for gorm
+	def map = [name:"test",jobClass:TestJob.class, concurrent:false, jobData:[fly:'free',gormSession:false] ]
 	def sd  = new SimpleJobDetail(map)
 	assert sd.isConcurrentExectionDisallowed() == false
 	assert sd.jobDataMap.fly=='free'
@@ -123,7 +130,7 @@ To pass in values for the JobDataMap then just pass in a map of values to the jo
 		println "************* it ran ***********"
 		//do something	
 	}
-	jobDetail.jobData = [gorm:false]
+	jobDetail.jobData = [gormSession:false]
 	
 	def trigger = TriggerBuilder.newTrigger().withIdentity("closureJobTrigger")
 		.withSchedule(
@@ -190,6 +197,38 @@ Example:
 
 	}
 
+### Job Artifact Example ###
+
+
+
+Example:
+
+	class ConfigTriggerJob{
+
+		def concurrent = false	
+	
+		def getTriggers(){
+			return config.grails.plugin.xyz.someTriggerConfig
+		}
+	
+	    def execute() {
+			//do something
+	    }
+	}
+
+.. and setup the trigger builder just like it says in the docs here [Quartz plugin][].  example config:
+
+	grails.plugin.xyz.someTriggerConfig = {
+		//repeat every second
+		simple repeatInterval: 1000l, repeatCount:1
+	}
+
+
+## Why we chose not to use or modify the quartz-plugin
+
+* the changes in [Quartz][] 2 made for many incompatibilities with older 1.8. I think it will be difficult to have 1 plugin support both versions but it may be possible with some work. Spring 3.1 seemed to pull it off but with a considerable amount of ugly gyrations
+* This plugin does not rely on the Spring support classes for quartz which the existing quartz-plugin does. Spring added support for [Quartz][] 2 in their upcoming 3.1 which will come with Grails 2. However we need and wanted Quartz 2 support now for our 1.3.x Grails apps
+* When doing jobs on the fly at customer sites, we wanted something dirt simple, light weight and used the quartz api but got the job done to integrate with Grails
 
 [documentation and quick start]: http://www.quartz-scheduler.org/documentation/quartz-2.1.x/quick-start
 [Quartz]: http://www.quartz-scheduler.org
@@ -197,3 +236,5 @@ Example:
 [JobDetail]: http://www.quartz-scheduler.org/api/2.1.0/org/quartz/JobDetail.html
 [JobExecutionContext]: http://www.quartz-scheduler.org/api/2.1.0/org/quartz/JobExecutionContext.html
 [Scheduler]: http://www.quartz-scheduler.org/api/2.1.0/org/quartz/impl/StdScheduler.html
+[Quartz plugin]: http://www.grails.org/plugin/quartz
+[plugin-config]: http://grails.org/plugin/plugin-config

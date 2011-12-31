@@ -29,6 +29,7 @@ import org.quartz.SchedulerException;
 import org.quartz.SchedulerListener;
 import org.quartz.Trigger;
 import org.quartz.TriggerListener;
+import org.quartz.spi.JobFactory;
 
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.BeanNameAware;
@@ -38,18 +39,19 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.SmartLifecycle;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.ResourceLoader;
-import org.springframework.core.io.support.PropertiesLoaderUtils;
 import org.springframework.scheduling.SchedulingException;
 import org.springframework.util.CollectionUtils;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionException;
+import org.springframework.transaction.TransactionStatus;
+import javax.sql.DataSource;
 
 /**
- * A very simple factory bean for the Quartz Scheduler
- * took a lot of ideas and used Spring's SchedulerFactoryBean as a starting point
+ * A very simple factory bean for the Quartz Scheduler that is compatible with 2.1+
+ * I used Spring's SchedulerFactoryBean as a starting point
  *
- * @author Joshua Burnett
  * @author Juergen Hoeller wrote original SchedulerFactoryBean
+ * @author Joshua Burnett hacked and modified this simplified version 
  */
 public class QuartzFactoryBean implements FactoryBean<Scheduler>, ApplicationContextAware,InitializingBean, DisposableBean, SmartLifecycle {
 	private static final transient Log log = LogFactory.getLog(JobErrorLoggerListener.class);
@@ -62,42 +64,65 @@ public class QuartzFactoryBean implements FactoryBean<Scheduler>, ApplicationCon
 	int phase = Integer.MAX_VALUE
 	Properties quartzProperties
 	JobListener[] globalJobListeners
+	JobFactory jobFactory
+	DataSource dataSource
+	PlatformTransactionManager transactionManager
+	private static final ThreadLocal<DataSource> configTimeDataSourceHolder = new ThreadLocal<DataSource>();
 
 	public void setApplicationContext(ApplicationContext applicationContext) {
 		this.applicationContext = applicationContext;
 	}
 	
-	//SmartLifecycle
-
+	/**
+	 * Return the DataSource for the currently configured Quartz Scheduler,
+	 * to be used by LocalDataSourceJobStore.
+	 * <p>This instance will be set before initialization of the corresponding
+	 * Scheduler, and reset immediately afterwards. It is thus only available
+	 * during configuration.
+	 * @see #setDataSource
+	 * @see LocalDataSourceJobStore
+	 */
+	public static DataSource getConfigTimeDataSource() {
+		return configTimeDataSourceHolder.get();
+	}
 
 	//---------------------------------------------------------------------
 	// Implementation of InitializingBean interface
 	//---------------------------------------------------------------------
 
 	public void afterPropertiesSet() throws Exception {
-		println "afterPropertiesSet Quartz Scheduler in QuartzFactoryBean"
-		if(quartzProperties){
-			StdSchedulerFactory fact = new StdSchedulerFactory();
-			fact.initialize(quartzProperties)
-			scheduler = fact.getScheduler()
-		}else{
-			scheduler = StdSchedulerFactory.getDefaultScheduler()
+
+		StdSchedulerFactory fact = new StdSchedulerFactory();
+		if (this.dataSource != null) {
+			quartzProperties.put(StdSchedulerFactory.PROP_JOB_STORE_CLASS, LocalDataSourceJobStore.class.getName());
+			configTimeDataSourceHolder.set(this.dataSource);
 		}
-		
-		scheduler.getContext().put("applicationContext", this.applicationContext)
-		scheduler.getContext().put("grailsApplication", this.grailsApplication)
-		if (this.globalJobListeners != null) {
-			for (JobListener listener : this.globalJobListeners) {
-				scheduler.listenerManager.addJobListener(listener)
+		fact.initialize(quartzProperties)
+		// Get Scheduler instance from SchedulerFactory.
+		try {
+			scheduler = fact.getScheduler()
+			populateSchedulerContext();
+			scheduler.getContext().put("applicationContext", this.applicationContext)
+			scheduler.getContext().put("grailsApplication", this.grailsApplication)
+			if (this.jobFactory != null) {
+				scheduler.setJobFactory(this.jobFactory);
+			}
+		}finally {
+			if (this.dataSource != null) {
+				configTimeDataSourceHolder.remove();
 			}
 		}
+		
+		registerListeners();
+		//registerJobsAndTriggers();
+		
+
 	}
 
 	//---------------------------------------------------------------------
 	// Implementation of FactoryBean interface
 	//---------------------------------------------------------------------
 
-	@Override
 	public Scheduler getScheduler() {
 		return this.scheduler;
 	}
@@ -106,7 +131,7 @@ public class QuartzFactoryBean implements FactoryBean<Scheduler>, ApplicationCon
 		return this.scheduler;
 	}
 
-	public Class<? extends Scheduler> getObjectType() {
+	public Class getObjectType() {
 		return (this.scheduler != null) ? this.scheduler.getClass() : Scheduler.class;
 	}
 
@@ -175,6 +200,23 @@ public class QuartzFactoryBean implements FactoryBean<Scheduler>, ApplicationCon
 	public void destroy() throws SchedulerException {
 		log.info("Shutting down Quartz Scheduler");
 		this.scheduler.shutdown(this.waitForJobsToCompleteOnShutdown);
+	}
+	
+	/**
+	 * Expose the specified context attributes and/or the current
+	 * ApplicationContext in the Quartz SchedulerContext.
+	 */
+	private void populateSchedulerContext() throws SchedulerException {
+		scheduler.getContext().put("applicationContext", this.applicationContext)
+		scheduler.getContext().put("grailsApplication", this.grailsApplication)
+	}
+
+	protected void registerListeners() {
+		if (this.globalJobListeners != null) {
+			for (JobListener listener : this.globalJobListeners) {
+				scheduler.listenerManager.addJobListener(listener)
+			}
+		}
 	}
 
 }

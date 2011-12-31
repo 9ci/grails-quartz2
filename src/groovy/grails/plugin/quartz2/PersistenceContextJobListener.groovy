@@ -28,7 +28,7 @@ import org.codehaus.groovy.grails.support.PersistenceContextInterceptor
 public class PersistenceContextJobListener extends JobListenerSupport {
 	private static final transient Log log = LogFactory.getLog(PersistenceContextJobListener.class);
     PersistenceContextInterceptor persistenceInterceptor
-
+	public static final transient String PERSITENCE_INIT = "gormSession";
 	public static final String NAME = "persistenceContextJobListener"
 	
     public String getName() {
@@ -49,7 +49,7 @@ public class PersistenceContextJobListener extends JobListenerSupport {
     }
 	
 	boolean isInitPersistenceContext(context){
-		if(context.mergedJobDataMap.containsKey('gorm') && context.mergedJobDataMap.get('gorm') == false){
+		if(context.mergedJobDataMap.containsKey(PERSITENCE_INIT) && context.mergedJobDataMap.get(PERSITENCE_INIT) == false){
 			return false
 		}else{
 			return true

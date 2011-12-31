@@ -14,12 +14,10 @@ public class HelloFromExternalConfigJob implements Job {
 	static boolean ok = false
 	static int firedCount = 0
 
-    public HelloFromExternalConfigJob() {}
-
     void execute(JobExecutionContext jobCtx) {
 		assert grailsApplication != null
 		assert orgId
-		sleep(3000) //sleep 3 seconds so we misfire past all the repeats
+		sleep(1200) //sleep a little over a sec so we get misfires
 		firedCount++
 
         // Say Hello to the World and display the date/time
