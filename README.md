@@ -207,8 +207,6 @@ Example:
 
 ### Job Artifact Example ###
 
-
-
 Example:
 
 	class ConfigTriggerJob{
@@ -227,8 +225,7 @@ Example:
 .. and setup the trigger builder just like it says in the docs here [Quartz plugin][].  example config:
 
 	grails.plugin.xyz.someTriggerConfig = {
-		//repeat every second
-		simple repeatInterval: 1000l, repeatCount:1
+		cron cronExpression: "0 0 6 * * ?"
 	}
 
 
