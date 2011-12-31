@@ -18,10 +18,12 @@ Uses the new [Quartz][] 2.1 framework from quartz-scheduler.org. The goal is to 
 outside of the ability to setup quartz jobs through config as outlined above and below, the following changes were made
 
 * Compatible with Grails 2x
-* the configuration and quartz.properties can now all reside in the standard Config.groovy ( or externalized config.groovy) instead needing to be separate files
+* The quartz configuration and quartz.properties can now all reside in the standard Config.groovy ( or externalized config.groovy) instead needing to be separate files
 * uses the persistenceInterceptor spring bean to setup sessions instead of hibernate and sessionFactory allowing it to work better with other noSql plugins and the datasources plugins
 * Removed any dependency on the Spring wrapper classes around quartz
 * Removed deprecated volatility settings
+* Did not move over the helper service
+* won't work with Quartz-monitor since, as far as I can tell, its tied to Quartz 1.8
 * Triggers are no longer setup as spring beans
 * Job artifact in the grails-app/jobs dir :
 * The config no longer needs to be static and can be completely extracted into a Config
@@ -228,6 +230,11 @@ Example:
 		cron cronExpression: "0 0 6 * * ?"
 	}
 
+## Roadmap
+
+* As said above, I think it would be best to find a way to merge this with the main plugin.
+* The whole "misfire" settings are incredibly confusing and I'm still not sure how they work
+* Reintroduce helpers
 
 [documentation and quick start]: http://www.quartz-scheduler.org/documentation/quartz-2.1.x/quick-start
 [Quartz]: http://www.quartz-scheduler.org
