@@ -79,7 +79,7 @@ public class TriggerHelper{
 	 * @param cronExpression - the cron expression string
 	 * @param params - jobData map
 	 */
-	static CronTriggerImpl commonTriggerSetup(trigger, JobKey jobKey, Map params = null){
+	static commonTriggerSetup(trigger, JobKey jobKey, Map params = null){
 		trigger.key = new TriggerKey("GRAILS_${Key.createUniqueName(null)}", null)
 		trigger.jobKey = jobKey
 	    if (params) trigger.jobDataMap.putAll(params)
