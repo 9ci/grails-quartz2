@@ -19,19 +19,19 @@ grails.project.dependency.resolution = {
     }
     dependencies {
         // specify dependencies here under either 'build', 'compile', 'runtime', 'test' or 'provided' scopes eg.
-		compile('org.quartz-scheduler:quartz:2.1.1'){ 
+		compile('org.quartz-scheduler:quartz:2.1.5'){ 
 			excludes "slf4j-api", "c3p0","jta"
 			//excludes([ group: 'org.slf4j', name: 'slf4j-api', version: '1.6.1']) 
 		}
 
-		if(grailsVersion != "2.0.0"){
+		if(grailsVersion != "2.0.3"){
 			runtime('com.h2database:h2:1.2.147'){ export = false }
 		}
         // runtime 'mysql:mysql-connector-java:5.1.13'
     }
 	plugins {
 		compile ':plugin-config:0.1.5'
-		build(":tomcat:$grailsVersion", ":release:1.0.0"){//, ":hibernate:$grailsVersion") {
+		build(":tomcat:$grailsVersion", ":release:2.0.2"){//, ":hibernate:$grailsVersion") {
             export = false
         }
 		
