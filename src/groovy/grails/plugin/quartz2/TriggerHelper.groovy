@@ -56,7 +56,7 @@ public class TriggerHelper{
 	static SimpleTriggerImpl simpleTrigger(JobKey jobKey, Date startTime, int repeatCount, Long interval, Map params = null){
 		def trigger = new SimpleTriggerImpl()
 		trigger = commonTriggerSetup(trigger,jobKey,params)
-		trigger.startTime = new Date()
+		trigger.startTime = startTime?:new Date()
 		trigger.repeatCount = repeatCount
 		trigger.repeatInterval = interval
 		return trigger
