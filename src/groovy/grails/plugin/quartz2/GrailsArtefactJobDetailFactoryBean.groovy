@@ -16,12 +16,8 @@
 
 package grails.plugin.quartz2;
 
-import org.quartz.JobDetail;
-import org.quartz.JobKey;
-import org.springframework.beans.factory.FactoryBean;
-import org.springframework.beans.factory.InitializingBean;
-import org.springframework.beans.factory.annotation.Required;
-import org.springframework.scheduling.quartz.SchedulerFactoryBean;
+import org.springframework.beans.factory.FactoryBean
+import org.springframework.beans.factory.InitializingBean
 
 /**
  * 
@@ -49,8 +45,18 @@ public class GrailsArtefactJobDetailFactoryBean implements FactoryBean, Initiali
         // Build JobDetail instance.
         jobDetail = new SimpleJobDetail();
 		jobDetail.setKey(grailsJobClass.getJobKey());
-		jobDetail.setJobClass(GrailsArtefactJob.class);
 		jobDetail.setConcurrent(grailsJobClass.isConcurrent());
+		
+		// Different artefacts for concurrent job and non-concurrent job so it will work with
+		// clustered persistent job store like org.quartz.impl.jdbcjobstore.JobStoreTX and
+		// driver delegate like org.quartz.impl.jdbcjobstore.PostgreSQLDelegate
+		if (grailsJobClass.isConcurrent()) {
+			jobDetail.setJobClass(GrailsArtefactJob.class);
+		}
+		else {
+			jobDetail.setJobClass(GrailsArtefactNonConcurrentJob.class);
+		}
+		
         jobDetail.getJobDataMap().put(JOB_NAME_PARAMETER, grailsJobClass.getFullName());
 		
 		//FIXME put the check for sessionRequired

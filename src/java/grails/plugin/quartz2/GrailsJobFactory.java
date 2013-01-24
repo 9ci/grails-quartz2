@@ -41,10 +41,14 @@ public class GrailsJobFactory extends PropertySettingJobFactory implements Appli
 		//JobDetail jobDetail = bundle.getJobDetail();
         //Class<? extends Job> jobClass = jobDetail.getJobClass();
         
-		String grailsJobName = (String) bundle.getJobDetail().getJobDataMap().get(GrailsArtefactJobDetailFactoryBean.JOB_NAME_PARAMETER);
+    	JobDetail jobDetail = bundle.getJobDetail();
+		String grailsJobName = (String) jobDetail.getJobDataMap().get(GrailsArtefactJobDetailFactoryBean.JOB_NAME_PARAMETER);
         if (grailsJobName != null) {
             Object job = applicationContext.getBean(grailsJobName);
-            return new GrailsArtefactJob(job);
+            if (!jobDetail.isConcurrentExectionDisallowed()) {
+            	return new GrailsArtefactNonConcurrentJob(job);
+            }
+        	return new GrailsArtefactJob(job);
         } else {
             return super.newJob(bundle,scheduler);
         }

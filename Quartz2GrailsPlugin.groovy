@@ -63,9 +63,9 @@ The goal is to keep it as simple as possible while making it friendly for Groovy
             configureJobBeans(jobClass)
         }
 
-		// persistenceContextJobListener(PersistenceContextJobListener){
-		// 	persistenceInterceptor = ref("persistenceInterceptor")
-		// }
+        quartzPersistenceContextJobListener(PersistenceContextJobListener){
+            persistenceInterceptor = ref("persistenceInterceptor")
+        }
 		
     	jobErrorLoggerListener(JobErrorLoggerListener)
 		quartzJobFactory(GrailsJobFactory)
@@ -78,7 +78,7 @@ The goal is to keep it as simple as possible while making it friendly for Groovy
 			//autoStartup = false
             // delay scheduler startup to after-bootstrap stage
             autoStartup = mcfg.grails.plugin.quartz2.autoStartup
-            globalJobListeners = [ref('jobErrorLoggerListener')]//,ref('persistenceContextJobListener')]
+            globalJobListeners = [ref('jobErrorLoggerListener')]//,ref('quartzPersistenceContextJobListener')]
 			if (mcfg.grails.plugin.quartz2.jdbcStore) {
                 dataSource = ref('dataSource')
                 transactionManager = ref('transactionManager')
@@ -165,7 +165,8 @@ The goal is to keep it as simple as possible while making it friendly for Groovy
         if (scheduler) {
 			//do this here so that 
 			if(ctx.persistenceInterceptor){
-				def listener = new PersistenceContextJobListener()
+                PersistenceContextJobListener listener = ctx.getBean("quartzPersistenceContextJobListener")
+                //def listener = new PersistenceContextJobListener()
 				listener.persistenceInterceptor = ctx.persistenceInterceptor
 				scheduler.listenerManager.addJobListener(listener)
 			}
