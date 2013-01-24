@@ -50,7 +50,7 @@ The goal is to keep it as simple as possible while making it friendly for Groovy
 
     def artefacts = [new JobArtefactHandler()]
 
-	def loadAfter = ['hibernate']
+	def loadAfter = ['hibernate', 'plugin-config']
 
     def doWithSpring = {
 		def mcfg = application.mergedConfig
