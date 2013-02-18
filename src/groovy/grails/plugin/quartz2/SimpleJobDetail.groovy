@@ -136,6 +136,13 @@ class SimpleJobDetail implements Cloneable, java.io.Serializable, JobDetail {
      * @return whether the associated Job class carries the {@link DisallowConcurrentExecution} annotation.
      */
     boolean isConcurrentExectionDisallowed() {
+      return isConcurrentExecutionDisallowed();
+    }
+    
+    /**
+     * @return whether the associated Job class carries the {@link DisallowConcurrentExecution} annotation.
+     */
+    boolean isConcurrentExecutionDisallowed() {
         if(!concurrent){
 			return true
 		} else{
@@ -144,11 +151,19 @@ class SimpleJobDetail implements Cloneable, java.io.Serializable, JobDetail {
 		}
         
     }
+    
 
 	/**
      * @return whether the associated Job class carries the {@link DisallowConcurrentExecution} annotation.
      */
     void setConcurrentExectionDisallowed(boolean singleThreaded) {
+		setConcurrentExecutionDisallowed(singleThreaded)
+	}
+	
+	/**
+     * @return whether the associated Job class carries the {@link DisallowConcurrentExecution} annotation.
+     */
+    void setConcurrentExecutionDisallowed(boolean singleThreaded) {
 		concurrent = !singleThreaded
 	}
 
@@ -171,7 +186,7 @@ class SimpleJobDetail implements Cloneable, java.io.Serializable, JobDetail {
     @Override
     String toString() {
         return "JobDetail '${key.group}.${key.name}' :  jobClass: '${jobClass?.name}'"
-                + " concurrentExectionDisallowed: " + isConcurrentExectionDisallowed() 
+                + " concurrentExecutionDisallowed: " + isConcurrentExecutionDisallowed() 
                 + " persistJobDataAfterExecution: " + isPersistJobDataAfterExecution() 
                 + " isDurable: " + isDurable() + " requestsRecovers: " + requestsRecovery();
     }
