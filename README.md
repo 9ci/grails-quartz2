@@ -50,7 +50,7 @@ You can externalize the config (see the grails docs on externalizing the config)
 	import static org.quartz.JobBuilder.*;
 	import static org.quartz.SimpleScheduleBuilder.*;
 	import static org.quartz.TriggerBuilder.*;
-	import grails.plugin.quartz2.InvokeMethodJob
+	import org.quartz.impl.triggers.SimpleTriggerImpl;
 
 	grails.plugin.quartz2.autoStartup = true 
 
@@ -69,9 +69,9 @@ You can externalize the config (see the grails docs on externalizing the config)
 	//the quartzScheduler bean and application context are passed to your closure
 	grails.plugin.quartz2.jobSetup.buyTheTicket = { quartzScheduler, ctx ->
 		//how it should look
-		def jobDetail = ClosureJob.createJob { jobCtx , appCtx->
+		def jobDetail =  grails.plugin.quartz2.ClosureJob.createJob({ jobCtx , appCtx->
 			appCtx.hunterService.takeTheRide(true)
-		}
+		})
 		
 		def trigger1 = new SimpleTriggerImpl(name:"trig1", startTime:new Date(),repeatInterval:1000,repeatCount:-1)
 		
