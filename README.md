@@ -1,5 +1,7 @@
 # A simple plugin for Quartz 2+ #
 
+**PROJECT IS DEPRECATED***
+
 Uses the new [Quartz][] 2.1 framework from quartz-scheduler.org. The goal is to keep this as simple as possible while making it friendly for Groovy/Grails. This is (mostly) backward compatible with the original [Quartz plugin][] too so the concept of Job artifacts should work as well. 
 
 ## What this plugin adds to be friendly with Grails
